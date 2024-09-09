@@ -12,6 +12,7 @@ const spotifyApi = new SpotifyWebApi({
 const youtubePlaylistUrl = 'YOUR_YOUTUBE_PLAYLIST_URL';
 const spotifyPlaylistUrl = 'YOUR_SPOTIFY_PLAYLIST_URL';
 const outputFilename = 'youtube_playlist_data.txt';
+const batchSize = 100; // Adjust the batch size as needed
 
 // Function to add songs to a Spotify playlist
 async function addSongsToPlaylist(playlistId, songs) {
@@ -29,9 +30,9 @@ async function addSongsToPlaylist(playlistId, songs) {
 }
 
 // Function to fetch playlist data from YouTube and save it to a file
-async function fetchYouTubePlaylistData() {
+async function fetchYouTubePlaylistData(playlistUrl, start = 0) {
   try {
-    const playlistInfo = await ytpl(youtubePlaylistUrl, { limit: Infinity });
+    const playlistInfo = await ytpl(playlistUrl, { limit: batchSize, continuation: start });
 
     const songs = playlistInfo.items.map((video) => {
       const videoId = video.id;
@@ -41,11 +42,17 @@ async function fetchYouTubePlaylistData() {
     });
 
     // Save songs to a text file
-    fs.writeFileSync(outputFilename, songs.join('\n'));
+    fs.writeFileSync(outputFilename, songs.join('\n'), { flag: 'a+' });
 
-    return songs;
+    return {
+      songs,
+      continuation: playlistInfo.continuation,
+    };
   } catch (error) {
     console.error('Error fetching YouTube playlist data:', error);
+    return {
+      error: error.message,
+    };
   }
 }
 
@@ -57,13 +64,24 @@ async function main() {
       spotifyApi.setAccessToken(data.body.access_token);
     });
 
-    // Get songs from YouTube playlist and save to file
-    const songs = await fetchYouTubePlaylistData();
+    let startIndex = 0;
+    let songs = [];
+    let continuation;
 
-    // Get the playlist ID from the Spotify URL
-    const playlistId = spotifyPlaylistUrl.split('/')[4];
+    do {
+      const result = await fetchYouTubePlaylistData(youtubePlaylistUrl, startIndex);
+      if (result.error) {
+        console.warn(`Error fetching batch starting from index ${startIndex}: ${result.error}`);
+        // Handle the error (e.g., retry or skip)
+      } else {
+        songs = songs.concat(result.songs);
+        continuation = result.continuation;
+        startIndex = continuation;
+      }
+    } while (continuation);
 
     // Add songs to the Spotify playlist
+    const playlistId = spotifyPlaylistUrl.split('/')[4];
     await addSongsToPlaylist(playlistId, songs);
   } catch (error) {
     console.error('Error:', error);
