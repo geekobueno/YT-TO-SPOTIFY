@@ -12,7 +12,7 @@ A Spotify playlist URL and a YouTube playlist URL
 Usage
 Clone the repository:
 Bash
-git clone https://github.com/geekobueno/your-repo-name.git
+git clone https://github.com/geekobueno/YT-TO-SPOTIFY
 
 Install dependencies:
 Bash
