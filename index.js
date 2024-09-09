@@ -1,88 +1,99 @@
 const ytpl = require('ytpl');
 const ytdl = require('ytdl-core');
-const SpotifyWebApi = require('spotify-api');
-const fs = require('fs');
+const SpotifyWebApi = require('spotify-web-api-node');
+const fs = require('fs').promises;
 
-// Replace placeholders with your actual credentials and playlist URLs
+// YouTube configuration
+const youtubePlaylistUrl = 'YOUR_YOUTUBE_PLAYLIST_URL';
+
+// Spotify configuration
 const spotifyApi = new SpotifyWebApi({
-  clientId: 'YOUR_CLIENT_ID',
-  clientSecret: 'YOUR_CLIENT_SECRET',
+  clientId: 'YOUR_SPOTIFY_CLIENT_ID',
+  clientSecret: 'YOUR_SPOTIFY_CLIENT_SECRET',
 });
 
-const youtubePlaylistUrl = 'YOUR_YOUTUBE_PLAYLIST_URL';
-const spotifyPlaylistUrl = 'YOUR_SPOTIFY_PLAYLIST_URL';
-const outputFilename = 'youtube_playlist_data.txt';
-const batchSize = 100; // Adjust the batch size as needed
+const spotifyPlaylistId = 'YOUR_SPOTIFY_PLAYLIST_ID';
 
-// Function to add songs to a Spotify playlist
-async function addSongsToPlaylist(playlistId, songs) {
-  try {
-    // Get the playlist ID from the URL
-    const playlistUri = spotifyPlaylistUrl.split('/')[4];
-
-    // Add tracks to the playlist
-    await spotifyApi.addTracksToPlaylist(playlistUri, songs);
-
-    console.log('Songs added to the playlist successfully!');
-  } catch (error) {
-    console.error('Error adding songs to the playlist:', error);
-  }
+function removeTopicSuffix(artistName) {
+  return artistName.endsWith(' - Topic') ? artistName.slice(0, -8) : artistName;
 }
 
-// Function to fetch playlist data from YouTube and save it to a file
-async function fetchYouTubePlaylistData(playlistUrl, start = 0) {
+async function fetchYoutubePlaylistData(playlistUrl) {
   try {
-    const playlistInfo = await ytpl(playlistUrl, { limit: batchSize, continuation: start });
+    const playlistInfo = await ytpl(playlistUrl, { limit: Infinity });
+    console.log(`Found ${playlistInfo.items.length} videos in the YouTube playlist.`);
 
-    const songs = playlistInfo.items.map((video) => {
-      const videoId = video.id;
-      const videoInfo = ytdl.getInfo(videoId);
-      const { title, author } = videoInfo.videoDetails;
-      return `${author} - ${title}`;
-    });
+    const songs = [];
+    for (const [index, video] of playlistInfo.items.entries()) {
+      try {
+        const videoInfo = await ytdl.getInfo(video.id);
+        const { title } = videoInfo.videoDetails;
+        const author = removeTopicSuffix(videoInfo.videoDetails.author.name);
+        songs.push({ title, author });
+        console.log(`Processed ${index + 1}/${playlistInfo.items.length}: ${title} - ${author}`);
+      } catch (error) {
+        console.error(`Error processing video ${video.id}:`, error.message);
+      }
+    }
 
-    // Save songs to a text file
-    fs.writeFileSync(outputFilename, songs.join('\n'), { flag: 'a+' });
-
-    return {
-      songs,
-      continuation: playlistInfo.continuation,
-    };
+    return songs;
   } catch (error) {
     console.error('Error fetching YouTube playlist data:', error);
-    return {
-      error: error.message,
-    };
+    return [];
   }
 }
 
-// Main function
+async function searchSpotifyTrack(query) {
+  const result = await spotifyApi.searchTracks(query, { limit: 1 });
+  if (result.body.tracks.items.length > 0) {
+    return result.body.tracks.items[0].uri;
+  }
+  return null;
+}
+
+async function addTracksToSpotifyPlaylist(playlistId, trackUris) {
+  await spotifyApi.addTracksToPlaylist(playlistId, trackUris);
+  console.log(`Added ${trackUris.length} tracks to the Spotify playlist.`);
+}
+
 async function main() {
   try {
-    // Authenticate with Spotify
-    await spotifyApi.clientCredentialsGrant().then((data) => {
-      spotifyApi.setAccessToken(data.body.access_token);
-    });
+    console.log('Starting YouTube playlist data extraction...');
+    const songs = await fetchYoutubePlaylistData(youtubePlaylistUrl);
 
-    let startIndex = 0;
-    let songs = [];
-    let continuation;
+    if (songs.length === 0) {
+      console.log('No songs were extracted from the YouTube playlist.');
+      return;
+    }
 
-    do {
-      const result = await fetchYouTubePlaylistData(youtubePlaylistUrl, startIndex);
-      if (result.error) {
-        console.warn(`Error fetching batch starting from index ${startIndex}: ${result.error}`);
-        // Handle the error (e.g., retry or skip)
-      } else {
-        songs = songs.concat(result.songs);
-        continuation = result.continuation;
-        startIndex = continuation;
+    console.log('YouTube data extraction complete. Authenticating with Spotify...');
+    const data = await spotifyApi.clientCredentialsGrant();
+    spotifyApi.setAccessToken(data.body.access_token);
+
+    console.log('Adding songs to Spotify playlist...');
+    const batchSize = 100; // Spotify allows up to 100 tracks per request
+    for (let i = 0; i < songs.length; i += batchSize) {
+      const batch = songs.slice(i, i + batchSize);
+      const trackUris = [];
+      
+      for (const song of batch) {
+        const query = `track:${song.title} artist:${song.author}`;
+        const uri = await searchSpotifyTrack(query);
+        if (uri) {
+          trackUris.push(uri);
+        } else {
+          console.log(`Could not find a match for: ${song.title} - ${song.author}`);
+        }
       }
-    } while (continuation);
+      
+      if (trackUris.length > 0) {
+        await addTracksToSpotifyPlaylist(spotifyPlaylistId, trackUris);
+      }
+      
+      console.log(`Processed ${i + batch.length} out of ${songs.length} songs.`);
+    }
 
-    // Add songs to the Spotify playlist
-    const playlistId = spotifyPlaylistUrl.split('/')[4];
-    await addSongsToPlaylist(playlistId, songs);
+    console.log('Finished adding songs to the Spotify playlist.');
   } catch (error) {
     console.error('Error:', error);
   }
