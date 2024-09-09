@@ -73,3 +73,8 @@ For more complex Spotify API interactions, you might need to implement authoriza
 Customize the script to fit your specific needs, such as modifying the output format or adding additional features.
 
 Enjoy using this script to effortlessly transfer your YouTube playlists to Spotify!
+
+
+ATTENTION
+
+might not work with very large playlist
