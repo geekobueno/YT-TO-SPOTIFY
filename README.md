@@ -22,7 +22,7 @@ git clone https://github.com/geekobueno/YT-TO-SPOTIFY
 
 2. Install dependencies:
 ```bash
-cd your-repo-name
+cd YT-TO-SPOTIFY
 npm install
 ```
 
