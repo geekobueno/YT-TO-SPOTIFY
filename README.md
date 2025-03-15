@@ -76,8 +76,8 @@ This application bridges the gap between YouTube and Spotify by providing a seam
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/youtube-spotify-migration.git
-cd youtube-spotify-migration
+git clone https://github.com/geekobueno/YT-TO-SPOTIFY.git
+cd YT-TO-SPOTIFY
 ```
 
 2. Install dependencies:
