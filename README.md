@@ -1,66 +1,68 @@
 # YouTube to Spotify Playlist Migration Tool
 
-A web application that allows users to easily migrate YouTube playlists to Spotify by simply providing a YouTube playlist URL. This tool extracts song information from public YouTube playlists, matches them with Spotify tracks, and creates corresponding playlists in the user's Spotify account.
+A web application built with Preact and SSR that allows users to easily migrate YouTube playlists to Spotify by simply providing a YouTube playlist URL. This tool extracts song information from public YouTube playlists, matches them with Spotify tracks, and creates corresponding playlists in the user's Spotify account.
 
 ## 🎯 Project Overview
 
-This application bridges the gap between YouTube and Spotify by providing a seamless way to transfer music collections. It handles the complexities of track matching and playlist creation to provide a straightforward user experience.
+This application bridges the gap between YouTube and Spotify by providing a seamless way to transfer music collections. It uses server-side rendering for improved performance and a better user experience, while handling the complexities of track matching and playlist creation.
 
 ### Key Features
 
 - Simple URL-based YouTube playlist import (no YouTube account required)
 - Connect to Spotify account via OAuth
-- Extract song information from YouTube playlist videos
+- Server-side processing of YouTube playlist data
 - Intelligent song matching for accurate track identification
 - Create new Spotify playlists with matched tracks
-- Detailed progress tracking and error reporting
-- Clean, responsive user interface
+- Real-time progress tracking and error reporting
+- Fast, responsive Preact-based UI with SSR
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Vite.js + React**: Fast development environment and component-based UI
+- **Preact**: Lightweight alternative to React with the same modern API
+- **Vite**: Next generation frontend tooling for fast development
+- **Server-Side Rendering (SSR)**: For improved performance and SEO
 - **Tailwind CSS**: Utility-first CSS framework for styling
-- **React Query**: Data fetching, caching, and state management
 
 ### Backend
 - **Node.js + Express**: Server-side application handling API interactions
 - **Passport.js**: Authentication middleware for Spotify OAuth
+- **Vite SSR**: Server-side rendering capabilities for Vite
 
 ### APIs
 - **Spotify Web API**: Access to Spotify's platform features and user data
-- **YouTube Data API v3**: Access to public YouTube playlist data (no authentication needed)
+- **YouTube Data API v3**: Access to public YouTube playlist data (API key only)
 
 ## 🗺️ Project Roadmap
 
 ### Phase 1: Foundation (MVP)
 - [x] Project setup and repository creation
-- [ ] Basic frontend structure with Vite and React
-- [ ] Express server setup
+- [ ] Vite + Preact SSR configuration
+- [ ] Express server integration
 - [ ] Spotify OAuth implementation
 - [ ] YouTube playlist URL parser
 - [ ] Display user Spotify profile
 
 ### Phase 2: Core Functionality
-- [ ] YouTube playlist data extraction from URL
-- [ ] Parse video titles for artist/track information
-- [ ] Display extracted YouTube playlist data in UI
-- [ ] Develop Spotify search algorithm
+- [ ] Server-side YouTube playlist data extraction
+- [ ] Title parsing algorithms for artist/track extraction
+- [ ] Display extracted YouTube playlist data
+- [ ] Develop Spotify search and matching service
 - [ ] Create new playlists in Spotify
 - [ ] Add tracks to Spotify playlists
 
 ### Phase 3: Enhanced Features
-- [ ] Batch processing for large playlists
-- [ ] Improved title parsing with multiple extraction patterns
+- [ ] Server-side batch processing for large playlists
+- [ ] Advanced title parsing with multiple extraction patterns
 - [ ] Manual correction interface for unmatched tracks
-- [ ] Migration history and status saving
-- [ ] Progress visualization
-- [ ] Error handling and recovery options
+- [ ] Migration history and status persistence
+- [ ] Real-time progress visualization
+- [ ] Robust error handling and recovery
 
 ### Phase 4: Polish and Extensions
 - [ ] UI refinements and responsive design
-- [ ] Performance optimizations
-- [ ] Support for multiple YouTube playlist formats (public/unlisted)
+- [ ] Performance optimizations (caching, lazy loading)
+- [ ] Support for multiple YouTube playlist formats
 - [ ] Handling of private/public Spotify playlist settings
 - [ ] Custom naming and description options for created playlists
 
@@ -70,25 +72,20 @@ This application bridges the gap between YouTube and Spotify by providing a seam
 - Node.js (v16+)
 - npm or yarn
 - Spotify Developer account
-- Google Developer account with YouTube Data API access (for API key only)
+- Google Developer account with YouTube Data API access (for API key)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/geekobueno/YT-TO-SPOTIFY.git
+git https://github.com/geekobueno/YT-TO-SPOTIFY.git
 cd YT-TO-SPOTIFY
+cd migrator
 ```
 
 2. Install dependencies:
 ```bash
-# Install backend dependencies
 npm install
-
-# Install frontend dependencies
-cd client
-npm install
-cd ..
 ```
 
 3. Set up environment variables:
@@ -96,6 +93,7 @@ Create a `.env` file in the root directory with the following variables:
 ```
 # Server
 PORT=3001
+NODE_ENV=development
 
 # Spotify API
 SPOTIFY_CLIENT_ID=your_spotify_client_id
@@ -108,56 +106,68 @@ YOUTUBE_API_KEY=your_youtube_api_key
 
 4. Start the development server:
 ```bash
-# Start backend and frontend concurrently
 npm run dev
 ```
 
-## 🎵 YouTube URL Processing
+## 🎵 Playlist Migration Process
 
-Instead of requiring YouTube authentication, this application works with public YouTube playlist URLs:
+The application follows these steps to migrate YouTube playlists to Spotify:
 
-1. User enters a YouTube playlist URL (e.g., `https://www.youtube.com/playlist?list=PLH-MmL68X2XXH_FqQ4KoDGEHXBZDiYm0L`)
-2. Backend extracts the playlist ID from the URL
-3. YouTube Data API is used to fetch playlist details using an API key
-4. Video titles are parsed to extract artist and track information
-5. This information is used to search for matching tracks on Spotify
+1. **Extraction**: Parse YouTube playlist URL and fetch video data using the YouTube API
+2. **Analysis**: Process video titles to extract artist and track information
+3. **Matching**: Search Spotify for matching tracks using extracted information
+4. **Creation**: Create a new Spotify playlist and add matched tracks
+5. **Reporting**: Generate a summary of successful matches and any issues
 
-## 🔒 Spotify Authentication Flow
+## 🔒 Authentication and Security
 
-This application uses OAuth 2.0 for Spotify:
+This application implements Spotify OAuth 2.0 authentication with server-side token management:
 
-1. User initiates login with Spotify
-2. User is redirected to Spotify's authorization page
-3. User grants permissions to the application
-4. Spotify redirects back with an authorization code
-5. Backend exchanges the code for access and refresh tokens
-6. Tokens are securely stored for API requests
+1. Users initiate Spotify login via the application
+2. After authorization, token exchange happens server-side
+3. Refresh tokens are securely stored for persistent access
+4. No YouTube authentication is required - only public/unlisted playlists are supported
 
 ## 🧩 Project Structure
 
 ```
 youtube-spotify-migration/
-├── client/                  # Frontend React application
-│   ├── public/              # Static assets
-│   ├── src/                 # React source files
+├── src/                     # Source code
+│   ├── client/              # Client-side Preact code
 │   │   ├── components/      # UI components
-│   │   ├── hooks/           # Custom React hooks
 │   │   ├── pages/           # Page components
-│   │   ├── services/        # API service functions
-│   │   └── utils/           # Utility functions
-│   └── vite.config.js       # Vite configuration
-├── server/                  # Backend Node.js/Express application
-│   ├── controllers/         # Route controllers
-│   ├── middleware/          # Express middleware
-│   ├── routes/              # API routes
-│   ├── services/            # Service layer
-│   │   ├── spotify.js       # Spotify API integration
-│   │   ├── youtube.js       # YouTube API integration
-│   │   └── parser.js        # Title parsing service
-│   └── utils/               # Utility functions
+│   │   ├── hooks/           # Custom hooks
+│   │   └── utils/           # Client utilities
+│   ├── server/              # Server-side code
+│   │   ├── api/             # API routes
+│   │   ├── auth/            # Authentication logic
+│   │   ├── services/        # Business logic services
+│   │   │   ├── spotify.js   # Spotify API integration
+│   │   │   ├── youtube.js   # YouTube API integration
+│   │   │   └── parser.js    # Title parsing service
+│   │   └── utils/           # Server utilities
+│   └── shared/              # Shared between client and server
+│       ├── config/          # Configuration
+│       └── types/           # TypeScript types/interfaces
+├── public/                  # Static assets
+├── vite.config.js           # Vite configuration
+├── server.js                # SSR entry point
 ├── .env                     # Environment variables
 └── package.json             # Project metadata and dependencies
 ```
+
+## 📋 Development Workflow
+
+1. **Local Development**:
+   - Run `npm run dev` to start the development server with HMR
+   - Server-side and client-side code will be watched for changes
+
+2. **Building for Production**:
+   - Run `npm run build` to generate optimized client and server bundles
+   - Run `npm start` to start the production server
+
+3. **Testing**:
+   - Run `npm test` to execute the test suite
 
 ## 📝 License
 
@@ -171,4 +181,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull RequestI
+5. Open a Pull Request

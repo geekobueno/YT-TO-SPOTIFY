@@ -1,0 +1,29 @@
+{
+  "name": "migrator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "vite build && vite build --ssr",
+    "preview": "vite preview",
+    "start": "NODE_ENV=production node server.js"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.21",
+    "axios": "^1.8.3",
+    "compression": "^1.8.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^146.0.0",
+    "postcss": "^8.5.3",
+    "preact": "^10.26.2",
+    "spotify-web-api-node": "^5.0.2",
+    "tailwindcss": "^4.0.14",
+    "vite-plugin-ssr": "^0.4.142"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.1",
+    "vite": "^6.2.0"
+  }
+}
